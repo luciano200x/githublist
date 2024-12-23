@@ -1,5 +1,13 @@
 import requests
 
+def get_aws_ips():
+    # Fetch data from AWS IP ranges
+    response = requests.get('https://ip-ranges.amazonaws.com/ip-ranges.json')
+    data = response.json()
+    
+    # Extract all IPv4 prefixes
+    return {prefix['ip_prefix'] for prefix in data['prefixes']}
+
 def get_github_ips():
     # Fetch data from GitHub meta API
     response = requests.get('https://api.github.com/meta')
@@ -18,6 +26,10 @@ def get_github_ips():
         if field in data:
             all_ips.update(data[field])
     
+    # Add AWS IPs
+    aws_ips = get_aws_ips()
+    all_ips.update(aws_ips)
+    
     # Sort IPs for consistent output
     return sorted(list(all_ips))
 
@@ -26,9 +38,10 @@ def write_ip_list(filename="github_ips.txt"):
         ips = get_github_ips()
         
         with open(filename, 'w') as f:
-            # Write header similar to Spamhaus format
-            f.write("; GitHub IP List - Generated from api.github.com/meta\n")
-            f.write("; https://api.github.com/meta\n\n")
+            # Update header to reflect both sources
+            f.write("; GitHub and AWS IP List - Generated from multiple sources\n")
+            f.write("; https://api.github.com/meta\n")
+            f.write("; https://ip-ranges.amazonaws.com/ip-ranges.json\n\n")
             
             # Write IPs
             for ip in ips:
